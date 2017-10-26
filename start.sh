@@ -3,7 +3,7 @@ images_to_download=(rancher/server:v1.6.10 \
 		    rancher/agent:v1.2.6 \
                     rancher/lb-service-haproxy:v0.7.9 \
                     gcr.io/google_containers/pause-amd64:3.0 \
-		    gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.1 \
+                    gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.1 \
                     gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.2 \
                     gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.2 \
                     gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.2 \
