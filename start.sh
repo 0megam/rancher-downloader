@@ -1,32 +1,35 @@
 #!/bin/bash
 targetRegistry="$1"
-images_to_download=(rancher/server:v1.6.10 \
-		    rancher/agent:v1.2.6 \
-                    rancher/lb-service-haproxy:v0.7.9 \
-                    gcr.io/google_containers/pause-amd64:3.0 \
-                    gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.1 \
-                    gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.5 \
-                    gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.2 \
-                    gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.2 \
-                    gcr.io/google_containers/heapster-influxdb-amd64:v1.3.3 \
-                    gcr.io/google_containers/heapster-grafana-amd64:v4.0.2 \
-                    gcr.io/google_containers/heapster-amd64:v1.3.0-beta.1 \
-                    gcr.io/kubernetes-helm/tiller:v2.3.0)
+extra_images=(rancher/server:v1.6.10 \
+	      rancher/agent:v1.2.6 \
+              rancher/lb-service-haproxy:v0.7.9 \
+              gcr.io/google_containers/pause-amd64:3.0)
 catalog_dir="rancher-catalog"
+rancher_k8s_dir="kubernetes-package"
+rancher_k8s_branch="origin/k8s-v1.7"
+#rancher_k8s_branch="origin/v1.6"
 subcatalog_dir="infra-templates"
 rancher_catalog_url="https://github.com/rancher/rancher-catalog"
+rancher_k8s_url="https://github.com/rancher/kubernetes-package"
 git clone ${rancher_catalog_url} ${catalog_dir}
+git clone ${rancher_k8s_url} ${rancher_k8s_dir} 
 IFS=$'\n' read -ra branches <<<$(git -C ${catalog_dir} branch -r | sed 's/origin\/HEAD -> //g')
 options=()
 for branch in ${branches[@]}; do
     options+=($branch "-" off)
 done
 echo ${options[@]}
-#exit 0
+
+
 choice=$(dialog --ok-label "Next" --radiolist "Select rancher-catalog branch:" 50 100 50 ${options[@]} 2>&1 >/dev/tty)
-git -C ${catalog_dir} checkout ${choice}
-git -C ${catalog_dir} pull ${choice//// }
+echo $choice
+git -C ${catalog_dir} checkout ${choice/origin\//}
+git -C ${catalog_dir} pull origin ${choice/origin\//}
 git -C ${catalog_dir} reset --hard HEAD
+
+git -C ${rancher_k8s_dir} checkout ${rancher_k8s_branch/origin\//}
+git -C ${rancher_k8s_dir} pull origin ${rancher_k8s_branch/origin\//}
+git -C ${rancher_k8s_dir} reset --hard HEAD
 
 cd ${catalog_dir}/${subcatalog_dir}
 options=()
@@ -49,19 +52,23 @@ for choice in $choices; do
     echo "inside"
     images+=($(grep -hor --exclude="*.md" -e "rancher\/[\.0-9a-z-]\+:[\.0-9a-z-]\+" $choice | grep -v "shared"))
 done
-
+cd -
+images+=($(grep -r 'image: ' ${rancher_k8s_dir}/addon-templates/ | sed 's/.*$GCR_IO_REGISTRY\/\($BASE_IMAGE_NAMESPACE\|google_containers\).*\/\(.*\)/gcr.io\/google_containers\/\2/;
+                                                                        s/.*$GCR_IO_REGISTRY\/\($HELM_IMAGE_NAMESPACE\|kubernetes-helm\).*\/\(.*\)/gcr.io\/kubernetes-helm\/\2/;
+                                                                        s/"//g'))
+images+=("${extra_images[@]}")
 options=()
 i=1
 for image in $(echo "${images[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '); do
     options+=("$image" download on) 
     ((i++)) 
 done
+
 choices=$(dialog --separate-output --ok-label "Download" --checklist "Select images for download:" 50 100 50 ${options[@]} 2>&1 >/dev/tty)
 for choice in $choices; do
     images_to_download+=($choice)
 done
 echo ${images_to_download[@]}
-cd -
 mkdir images
 for image in ${images_to_download[@]}; do
     docker pull $image
