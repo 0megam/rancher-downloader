@@ -1,12 +1,12 @@
 #!/bin/bash
 targetRegistry="$1"
-extra_images=(rancher/server:v1.6.10 \
-	      rancher/agent:v1.2.6 \
-              rancher/lb-service-haproxy:v0.7.9 \
+extra_images=(rancher/server:v1.6.12 \
+	      rancher/agent:v1.2.7 \
+              rancher/lb-service-haproxy:v0.7.15 \
               gcr.io/google_containers/pause-amd64:3.0)
 catalog_dir="rancher-catalog"
 rancher_k8s_dir="kubernetes-package"
-rancher_k8s_branch="origin/k8s-v1.7"
+rancher_k8s_branch="origin/v1.6"
 #rancher_k8s_branch="origin/v1.6"
 subcatalog_dir="infra-templates"
 rancher_catalog_url="https://github.com/rancher/rancher-catalog"
